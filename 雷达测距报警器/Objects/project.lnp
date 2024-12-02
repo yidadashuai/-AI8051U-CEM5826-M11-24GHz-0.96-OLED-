@@ -1,0 +1,12 @@
+".\Objects\main.obj",
+".\Objects\STC32G_Delay.obj",
+".\Objects\STC32G_GPIO.obj",
+".\Objects\oled.obj",
+".\Objects\STC32G_GPIO_Isr.obj",
+".\Objects\STC32G_I2C.obj",
+".\Objects\STC32G_I2C_Isr.obj",
+".\Objects\usart3.obj" 
+TO ".\Objects\project" 
+PRINT(".\Listings\project.map") CASE 
+CLASSES (EDATA (0x0-0x7FF), 
+HDATA (0x0-0x7FF, 0xFE2000-0xFFFFFF)) 

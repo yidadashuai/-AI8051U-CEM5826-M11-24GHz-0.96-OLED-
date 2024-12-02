@@ -1,0 +1,257 @@
+C251 COMPILER V5.60.0,  main                                                               01/12/24  22:47:41  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE main
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\keil c51&stm32&c251\Keil_v5\C251\BIN\C251.EXE main.c XSMALL INTR2 BROWSE DEBUG PRINT(.\Listings\
+                    -main.lst) OBJECT(.\Objects\main.obj) 
+
+stmt  level    source
+
+    1          
+    2          #include "oled.h"
+    3          #include "pic.h"
+    4          #include "STC32G_GPIO.h"
+    5          #include "STC32G_Switch.h"
+    6          #include "usart3.h"
+    7          
+    8          
+    9          //void Blink();                                                                 // P0口流水灯
+   10          void Beep();                                                                    // 蜂鸣器
+   11          /******************** IO口配置 ********************/
+   12          void    GPIO_config(void)
+   13          {
+   14   1              P0_MODE_IO_PU(GPIO_Pin_All);            //P0 设置为准双向口
+   15   1              P1_MODE_IO_PU(GPIO_Pin_All);            //P1 设置为准双向口
+   16   1              P2_MODE_IO_PU(GPIO_Pin_All);            //P2 设置为准双向口
+   17   1              P3_MODE_IO_PU(GPIO_Pin_All);            //P3 设置为准双向口
+   18   1              P4_MODE_IO_PU(GPIO_Pin_All);            //P4 设置为准双向口
+   19   1              P5_MODE_IO_PU(GPIO_Pin_All);            //P5 设置为准双向口
+   20   1              P6_MODE_IO_PU(GPIO_Pin_All);            //P6 设置为准双向口
+   21   1              P7_MODE_IO_PU(GPIO_Pin_All);            //P7 设置为准双向口
+   22   1      }
+   23          
+   24          void    I2C_config(void)
+   25          {
+   26   1              I2C_InitTypeDef         I2C_InitStructure;
+   27   1              I2C_InitStructure.I2C_Mode      = I2C_Mode_Master;              //主从选择   I2C_Mode_Master, I2C_Mode_Slave
+   28   1              I2C_InitStructure.I2C_Enable    = ENABLE;                                                       //I2C功能使能,   ENABLE, DISABLE
+   29   1              I2C_InitStructure.I2C_Speed     = 13;                                                                   //I2C总线速度,   0~63
+   30   1              I2C_InitStructure.I2C_MS_WDTA   = DISABLE;                                                      //使能主机自动发送设置,   ENABLE, DISABLE
+   31   1              I2C_Init(&I2C_InitStructure);
+   32   1              
+   33   1              I2C_SW(I2C_P33_P32);                                    //I2C_P14_P15,I2C_P24_P25,I2C_P76_P77,I2C_P33_P32
+   34   1      }
+   35          
+   36          
+   37          void main()
+   38          {
+   39   1              
+   40   1              WTST = 0;               //设置程序指令延时参数，赋值为0可将CPU执行指令的速度设置为最快
+   41   1              EAXFR = 1;              //扩展SFR(XFR)访问使能 
+   42   1              CKCON = 0;      //提高访问XRAM速度
+   43   1      
+   44   1              GPIO_config();
+   45   1              I2C_config();
+   46   1              UART3_config(0);                                //选择波特率, 2: 使用Timer2做波特率, 其它值: 使用Timer3做波特率.
+   47   1          EA = 1;                             //开总中断
+   48   1              
+   49   1              
+   50   1              
+   51   1          OLED_Init();                        //OLED初始化
+   52   1          OLED_BuffClear();                               //清除全部缓存
+   53   1          OLED_BuffShowBMP(0,0,128,8,OLED12864_IMG);
+*** WARNING C91 IN LINE 53 OF main.c: '&': pointer to different objects
+   54   1          OLED_BuffShow();                                //将缓存写入显示屏显示
+   55   1              delay_ms(1000);
+   56   1              OLED_BuffClear();                               //清除全部缓存
+   57   1              
+C251 COMPILER V5.60.0,  main                                                               01/12/24  22:47:41  PAGE 2   
+
+   58   1              while(1)
+   59   1              {
+   60   2                      P40 = 1;
+   61   2                      P0 = 1;
+   62   2                      if(Rec_Flag)
+   63   2                      {
+   64   3                  OLED_BuffClear();                               //清除全部缓存
+   65   3                              OLED_BuffShowString(0,0,RX3_Buffer,0);                  //显示数据
+   66   3                              OLED_BuffShow();                                //将缓存写入显示屏显示
+   67   3                              delay_ms(10);                                                                   //延时      
+   68   3                              Rec_Flag = 1;
+   69   3              }
+   70   2                      if(led_Flag)
+   71   2                      {
+   72   3                              P40 = 0;
+   73   3                              P0 = 1;
+   74   3                              led_Flag = 0;
+   75   3              }
+   76   2                      if(beep_Flag)
+   77   2                      {
+   78   3                              Beep();
+   79   3                              beep_Flag = 0;
+   80   3              }
+   81   2                              
+   82   2      
+   83   2                      
+   84   2              }
+   85   1      }
+   86          
+   87          
+   88          
+   89          //void Blink()                                                                  // P0口流水灯
+   90          //{
+   91          //      u8 i;
+   92          //      for(i = 0;i < 6;i++)                            // 闪烁3次（即亮灭6个过程）
+   93          //      {
+   94          //              P0 = ~P0;                                                                       // 取反实现亮灭
+   95          //              delay_ms(200);                                                  // 延时200ms
+   96          //      }
+   97          //}
+   98          void Beep()                                                                     // 蜂鸣器
+   99          {
+  100   1              u8 i;
+  101   1              P12 = 0;
+  102   1              for(i = 0;i < 2;i++)                            // 响3次（即6个过程）
+  103   1              {
+  104   2                      P12 = ~P12;                                                             
+  105   2                      delay_ms(100);                                  // 延时100ms
+  106   2              }
+  107   1      }
+  108          
+  109          
+  110          //void main(void)
+  111          //{
+  112          //      sysinit();                                                                      // STC32初始化设置
+  113          //      UART3_config(0);                                                //选择波特率, 2: 使用Timer2做波特率, 其它值: 使用Timer3做波特率.        
+  114          //      EA = 1;                                                                         // 使能EA总中断
+  115          
+  116          //      PrintString3("AI8051U UART3 Test Programme!\r\n");  //UART3发送一个字符串
+  117          //      
+  118          //      while (1)
+  119          //      {       
+  120          //              
+  121          //              if((TX3_Cnt != RX3_Cnt) && (!B_TX3_Busy))   //收到数据, 发送空闲
+  122          //              {
+  123          //                      S3BUF = RX3_Buffer[TX3_Cnt];
+C251 COMPILER V5.60.0,  main                                                               01/12/24  22:47:41  PAGE 3   
+
+  124          //                      B_TX3_Busy = 1;
+  125          //                      if(++TX3_Cnt >= UART3_BUF_LENGTH)   TX3_Cnt = 0;
+  126          //              }               
+  127          //      }
+  128          //}
+  129          
+  130          
+  131          // =============================================================================================
+  132          // 以下均为源代码自带的测试代码，如需要使用可以取消注释
+  133          // //-----------------------------------------显示图片-----------------------------------------   
+  134              // OLED_BuffClear();                                                       //清除全部缓存
+  135              // OLED_BuffShowBMP(0,0,128,8,OLED12864_IMG);                              //显示LOGO图片
+  136              // OLED_BuffShow();                                                        //将缓存写入显示屏显示
+  137              // delay_ms(DELAY_TIME);                                                   //延时   
+  138          
+  139          // //-----------------------------------------显示字符-----------------------------------------   
+  140          //     OLED_BuffClear();                                                       //清除全部缓存
+  141          //     OLED_BuffShowString(0,0,"HEELO ,WELCOME TO USE STC32&OLED12864!",0);    //显示数据
+  142          //     OLED_BuffShow();                                                        //将缓存写入显示屏显示
+  143          //     delay_ms(DELAY_TIME);                                                   //延时   
+  144              
+  145          // //-----------------------------------------显示汉字-----------------------------------------   
+  146          //     OLED_BuffClear();                                                       //清除全部缓存
+  147          //     OLED_BuffShowString(0,0,"你好,欢迎使用STC 驱\xfd动OLED12864的历程",0);  //显示数据
+  148          //     OLED_BuffShow();                                                        //将缓存写入显示屏显示
+  149          //     delay_ms(DELAY_TIME);                                                   //延时          
+  150              
+  151          // //-----------------------------------------显示点-----------------------------------------   
+  152          //     OLED_BuffClear();                                                       //清除全部缓存
+  153          //     OLED_BuffShowString(32,0,"画点测试");                                   //显示数据
+  154          //     OLED_BuffShow();                                                        //将缓存写入显示屏显示   
+  155          //     for( i=0;i<64;i++ )                                                     //循环64次
+  156          //     {
+  157          //         OLED_BuffShowPoint(i*2,25);                                         //显示一个点
+  158          //         OLED_BuffShow();                                                    //刷新显示
+  159          //         delay_ms(50);                                                       //延时
+  160          //     }
+  161              
+  162          // //-----------------------------------------显示线-----------------------------------------   
+  163          //     OLED_BuffClear();                                                       //清除全部缓存
+  164          //     OLED_BuffShowString(32,0,"画线测试");                                   //显示数据
+  165          //     OLED_BuffShow();                                                        //将缓存写入显示屏显示   
+  166          //     for( i=0;i<6;i++ )                                                      //循环6次
+  167          //     {
+  168          //         OLED_BuffShowLine(4,16+8*i,124,16+8*i);                             //显示横着6条线
+  169          //         OLED_BuffShow();                                                    //刷新显示
+  170          //         delay_ms(100);
+  171          //     }        
+  172          //     for( i=0;i<16;i+=1 )                                                    //循环16次
+  173          //     {
+  174          //         OLED_BuffShowLine(8*i+4,16,8*i+4,56);                               //显示16条数线
+  175          //         OLED_BuffShow();                                                    //刷新显示
+  176          //         delay_ms(100);
+  177          //     }  
+  178          
+  179          // //-----------------------------------------显示圆-----------------------------------------   
+  180          //     OLED_BuffClear();                                                       //清除全部缓存
+  181          //     OLED_BuffShowString(32,0,"画圆测试");                                   //显示数据
+  182          //     OLED_BuffShow();                                                        //将缓存写入显示屏显示   
+  183          //     for( i=0;i<6;i++ )                                                      //循环6次
+  184          //     {
+  185          //        OLED_BuffShowCircle(64,40,5+i*3);                                    //画一个圆    
+  186          //         OLED_BuffShow();                                                    //刷新显示
+  187          //         delay_ms(250);
+  188          //     }         
+  189          
+C251 COMPILER V5.60.0,  main                                                               01/12/24  22:47:41  PAGE 4   
+
+  190          // //-----------------------------------------显示32大字-----------------------------------------   
+  191          //     OLED_BuffClear();                                                       //清除全部缓存
+  192          //     OLED_BuffShowString(32,0,"大字测试");                                   //显示数据
+  193          //     OLED_BuffShowChar32(24,3,1,0);                                          //显示数字1
+  194          //     OLED_BuffShowChar32(40,3,0,0);                                          //显示数字0
+  195          //     OLED_BuffShowChar32(56,3,10,0);                                         //显示：
+  196          //     OLED_BuffShowChar32(72,3,5,0);                                          //显示数字5
+  197          //     OLED_BuffShowChar32(88,3,5,0);                                          //显示数字5
+  198          //     OLED_BuffShow();                                                        //将缓存写入显示屏显示   
+  199          //     delay_ms(DELAY_TIME);                                                   //延时    
+  200          
+  201          // //-----------------------------------------反显测试-----------------------------------------   
+  202          //     OLED_BuffClear();                                                       //清除全部缓存
+  203          //     OLED_BuffShowString(32,0,"反显测试",0);                                 //显示数据
+  204          //     OLED_BuffShowString(16,2,"  这是正\xfd显  ",0);                         //显示数据
+  205          //     OLED_BuffShowString(16,4,"  这是反显  ",1);                             //显示数据
+  206          //     OLED_BuffShow();                                                        //将缓存写入显示屏显示
+  207          //     delay_ms(DELAY_TIME);   
+  208          
+  209          // //-----------------------------------------变量显示-----------------------------------------   
+  210          //     OLED_BuffClear();                                                       //清除全部缓存
+  211          //     OLED_BuffShowString(32,0,"变量显示",0);                                 //显示数据
+  212          //     OLED_BuffShowNum(0,2,-25169,0) ;                                        //显示数据
+  213          //     OLED_BuffShowNum02F(0,4,3.14159,0);                                     //显示数据
+  214          //     OLED_BuffShowNum02F(0,6,dat,1);                                         //显示数据
+  215          //     OLED_BuffShow();                                                        //将缓存写入显示屏显示
+  216          //     delay_ms(DELAY_TIME);   
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =      3298     ------
+  ecode size           =    ------     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =    ------     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------          6
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =    ------     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

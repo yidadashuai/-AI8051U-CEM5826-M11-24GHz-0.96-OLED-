@@ -1,0 +1,198 @@
+C251 COMPILER V5.60.0,  usart3                                                             01/12/24  22:45:25  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE usart3
+OBJECT MODULE PLACED IN .\Objects\usart3.obj
+COMPILER INVOKED BY: D:\keil c51&stm32&c251\Keil_v5\C251\BIN\C251.EXE usart3.c XSMALL INTR2 BROWSE DEBUG PRINT(.\Listing
+                    -s\usart3.lst) OBJECT(.\Objects\usart3.obj) 
+
+stmt  level    source
+
+    1          #include "usart3.h"
+    2          
+    3          u8  TX3_Cnt;    //发送计数
+    4          u8  RX3_Cnt;    //接收计数
+    5          bit B_TX3_Busy; //发送忙标志
+    6          
+    7          u8  RX3_Buffer[UART3_BUF_LENGTH]; //接收缓冲
+    8          bit Rec_Flag = 0;       //接受完成标志位
+    9          bit led_Flag = 0;
+   10          bit beep_Flag = 0;
+   11          //========================================================================
+   12          // 函数: void UART3_config(u8 brt)
+   13          // 描述: UART3初始化函数。
+   14          // 参数: brt: 选择波特率, 2: 使用Timer2做波特率, 其它值: 使用Timer3做波特率.
+   15          // 返回: none.
+   16          // 版本: VER1.0
+   17          // 日期: 2014-11-28
+   18          // 备注: 
+   19          //========================================================================
+   20          void UART3_config(u8 brt)    // 选择波特率, 2: 使用Timer2做波特率, 其它值: 使用Timer3做波特率.
+   21          {
+   22   1          if(brt == 2)
+   23   1          {
+   24   2              SetTimer2Baudraye(Baudrate3);
+   25   2              S3CON = 0x10;       //8位数据, 使用Timer2做波特率发生器, 允许接收
+   26   2          }
+   27   1          else
+   28   1          {
+   29   2              T3R = 0;                //Timer stop
+   30   2              S3CON = 0x50;       //8位数据, 使用Timer3做波特率发生器, 允许接收
+   31   2              T3H = (u8)(Baudrate3 / 256);
+   32   2              T3L = (u8)(Baudrate3 % 256);
+   33   2              T3_CT = 0;      //Timer3 set As Timer
+   34   2              T3x12 = 1;      //Timer3 set as 1T mode
+   35   2              T3R = 1;                //Timer run enable
+   36   2          }
+   37   1          ES3  = 1;       //允许UART3中断
+   38   1          S3_S = 1;       //UART3 switch bit1 to: 0: P0.0 P0.1,  1: P5.0 P5.1
+   39   1      
+   40   1          B_TX3_Busy = 0;
+   41   1          TX3_Cnt = 0;
+   42   1          RX3_Cnt = 0;
+   43   1      }
+   44          
+   45          //========================================================================
+   46          // 函数: void PrintString3(u8 *puts)
+   47          // 描述: 串口3发送字符串函数。
+   48          // 参数: puts:  字符串指针.
+   49          // 返回: none.
+   50          // 版本: VER1.0
+   51          // 日期: 2014-11-28
+   52          // 备注: 
+   53          //========================================================================
+   54          void PrintString3(u8 *puts)
+   55          {
+   56   1          for (; *puts != 0;  puts++)     //遇到停止符0结束
+   57   1          {
+   58   2              S3BUF = *puts;
+C251 COMPILER V5.60.0,  usart3                                                             01/12/24  22:45:25  PAGE 2   
+
+   59   2              B_TX3_Busy = 1;
+   60   2              while(B_TX3_Busy);
+   61   2          }
+   62   1      }
+   63          
+   64          //========================================================================
+   65          // 函数: SetTimer2Baudraye(u32 dat)
+   66          // 描述: 设置Timer2做波特率发生器。
+   67          // 参数: dat: Timer2的重装值.
+   68          // 返回: none.
+   69          // 版本: VER1.0
+   70          // 日期: 2014-11-28
+   71          // 备注: 
+   72          //========================================================================
+   73          void SetTimer2Baudraye(u32 dat)  // 使用Timer2做波特率.
+   74          {
+   75   1          T2R = 0;            //Timer stop
+   76   1          T2_CT = 0;  //Timer2 set As Timer
+   77   1          T2x12 = 1;  //Timer2 set as 1T mode
+   78   1          T2H = (u8)(dat / 256);
+   79   1          T2L = (u8)(dat % 256);
+   80   1          ET2 = 0;    //禁止中断
+   81   1          T2R = 1;            //Timer run enable
+   82   1      }
+   83          
+   84          //========================================================================
+   85          // 函数: void UART3_int (void) interrupt UART3_VECTOR
+   86          // 描述: UART3中断函数。
+   87          // 参数: nine.
+   88          // 返回: none.
+   89          // 版本: VER1.0
+   90          // 日期: 2014-11-28
+   91          // 备注: 
+   92          //========================================================================
+   93          //void UART3_int (void) interrupt 17
+   94          //{
+   95          //    if(S3RI)
+   96          //    {
+   97          //        S3RI = 0;    //Clear Rx flag
+   98          //        RX3_Buffer[RX3_Cnt] = S3BUF;
+   99          //        if(++RX3_Cnt >= UART3_BUF_LENGTH)   RX3_Cnt = 0;
+  100          //    }
+  101          
+  102          //    if(S3TI)
+  103          //    {
+  104          //        S3TI = 0;   //Clear Tx flag
+  105          //        B_TX3_Busy = 0;
+  106          //    }
+  107          //}
+  108          
+  109          
+  110          //void UART3_int (void) interrupt 17
+  111          //{
+  112          //     if(S3RI)         //如果接受到数据
+  113          //    {
+  114          //        S3RI = 0;    //Clear Rx flag
+  115          //        RX3_Buffer[RX3_Cnt] = S3BUF;
+  116          //              
+  117          //              if( RX3_Buffer[RX3_Cnt]== '\n' )        
+  118          //              {
+  119          //                      if( RX3_Buffer[RX3_Cnt-1]== '\r' )
+  120          //                      {
+  121          //                              Rec_Flag = 1;
+  122          //                      }
+  123          //                      RX3_Cnt = 0;
+  124          //              }
+C251 COMPILER V5.60.0,  usart3                                                             01/12/24  22:45:25  PAGE 3   
+
+  125          //              else
+  126          //                      RX3_Cnt++;
+  127          //    }
+  128          
+  129          //    if(S3TI)
+  130          //    {
+  131          //        S3TI = 0;    //Clear Tx flag
+  132          //        B_TX3_Busy = 0;
+  133          //    }
+  134          
+  135          //}
+  136          
+  137          
+  138          void UART3_int (void) interrupt 17
+  139          {
+  140   1          if (S3RI) 
+  141   1              {
+  142   2              // 读取接收到的字符
+  143   2              char receivedChar = S3BUF;
+  144   2          
+  145   2              // 添加字符到接收数组缓冲区
+  146   2              if (RX3_Cnt < UART3_BUF_LENGTH - 1) {
+  147   3                  //接收完一组数据
+  148   3                  if (receivedChar == 'v') {
+  149   4                                      Rec_Flag = 1;   //接收完成标志位
+  150   4                                      led_Flag = 1;
+  151   4                                      beep_Flag = 1;
+  152   4                                      RX3_Buffer[RX3_Cnt] = '\0'; // 添加字符串结束符            
+  153   4                                      RX3_Cnt = 0; // 重置索引，准备接收下一组数据
+  154   4              }        
+  155   3                      RX3_Buffer[RX3_Cnt++] = receivedChar;
+  156   3           }
+  157   2                      S3RI = 0;    //Clear Rx flag
+  158   2          }
+  159   1      } 
+  160          
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =       181     ------
+  ecode size           =    ------     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =    ------     ------
+  xdata-const size     =    ------     ------
+  edata size           =        66     ------
+  bit size             =         4     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =    ------     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
